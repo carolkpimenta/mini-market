@@ -4,6 +4,8 @@ import com.minimarket.enums.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @AllArgsConstructor
 public class UserResponse {
@@ -13,4 +15,6 @@ public class UserResponse {
     private String email;
     private String phone;
     private UserRole role;
+    private String document;
+    private LocalDateTime createdAt;
 }

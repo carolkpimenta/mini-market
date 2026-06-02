@@ -5,11 +5,12 @@ import com.minimarket.dto.ProductResponse;
 import com.minimarket.dto.UpdateProductRequest;
 import com.minimarket.entity.Product;
 import com.minimarket.exception.ResourceNotFoundException;
+import com.minimarket.mapper.ProductMapper;
 import com.minimarket.repository.ProductRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -17,9 +18,11 @@ import java.util.List;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final ProductMapper productMapper;
 
-    public ProductService(ProductRepository productRepository) {
+    public ProductService(ProductRepository productRepository, ProductMapper productMapper) {
         this.productRepository = productRepository;
+        this.productMapper = productMapper;
     }
 
     public ProductResponse create(CreateProductRequest request) {
@@ -31,49 +34,13 @@ public class ProductService {
         product.setStockQuantity(request.getStockQuantity());
         product.setActive(true);
 
-        Product savedProduct = productRepository.save(product);
-
-        return new ProductResponse(
-                savedProduct.getId(),
-                savedProduct.getName(),
-                savedProduct.getDescription(),
-                savedProduct.getPrice(),
-                savedProduct.getCategory(),
-                savedProduct.getStockQuantity(),
-                savedProduct.getActive()
-        );
-    }
-
-    //busca entities - transforma em dto - retorna lista
-    public List<ProductResponse> findAll() {
-        return productRepository.findAll()
-                .stream()
-                .map(product -> new ProductResponse(
-                        product.getId(),
-                        product.getName(),
-                        product.getDescription(),
-                        product.getPrice(),
-                        product.getCategory(),
-                        product.getStockQuantity(),
-                        product.getActive()
-                ))
-                .toList();
+        return productMapper.toResponse(productRepository.save(product));
     }
 
     public ProductResponse findById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
-
-        return new ProductResponse(
-                product.getId(),
-                product.getName(),
-                product.getDescription(),
-                product.getPrice(),
-                product.getCategory(),
-                product.getStockQuantity(),
-                product.getActive()
-        );
-
+        return productMapper.toResponse(product);
     }
 
     public ProductResponse update(Long id, UpdateProductRequest request) {
@@ -87,52 +54,26 @@ public class ProductService {
         product.setStockQuantity(request.getStockQuantity());
         product.setActive(request.getActive());
 
-        Product updatedProduct = productRepository.save(product);
-
-        return new ProductResponse(
-                updatedProduct.getId(),
-                updatedProduct.getName(),
-                updatedProduct.getDescription(),
-                updatedProduct.getPrice(),
-                updatedProduct.getCategory(),
-                updatedProduct.getStockQuantity(),
-                updatedProduct.getActive()
-        );
+        return productMapper.toResponse(productRepository.save(product));
     }
 
     public void deleteById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
-
         productRepository.delete(product);
     }
 
     @Transactional(readOnly = true)
     public List<ProductResponse> findByName(String name, Pageable pageable) {
-        return productRepository.findByNameContainingIgnoreCase(name, pageable).stream()
-                .map(product -> new ProductResponse(
-                        product.getId(),
-                        product.getName(),
-                        product.getDescription(),
-                        product.getPrice(),
-                        product.getCategory(),
-                        product.getStockQuantity(),
-                        product.getActive()
-                        ))
+        return productRepository.findByNameContainingIgnoreCase(name, pageable)
+                .stream()
+                .map(productMapper::toResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public Page<ProductResponse> findAll(Pageable pageable) {
-        return productRepository.findAll(pageable).map(product -> new ProductResponse(
-                product.getId(),
-                product.getName(),
-                product.getDescription(),
-                product.getPrice(),
-                product.getCategory(),
-                product.getStockQuantity(),
-                product.getActive()
-        ));
+        return productRepository.findAll(pageable)
+                .map(productMapper::toResponse);
     }
 }
-

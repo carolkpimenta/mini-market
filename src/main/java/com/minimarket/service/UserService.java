@@ -4,25 +4,27 @@ import com.minimarket.dto.CreateUserRequest;
 import com.minimarket.dto.UpdateUserRequest;
 import com.minimarket.dto.UserResponse;
 import com.minimarket.entity.User;
-import com.minimarket.enums.UserRole;
+import com.minimarket.exception.BusinessException;
+import com.minimarket.exception.ResourceNotFoundException;
+import com.minimarket.mapper.UserMapper;
 import com.minimarket.repository.UserRepository;
 import org.springframework.stereotype.Service;
-import com.minimarket.exception.BusinessException;
+
 import java.util.List;
-import com.minimarket.exception.ResourceNotFoundException;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, UserMapper userMapper) {
         this.userRepository = userRepository;
+        this.userMapper = userMapper;
     }
 
-    public UserResponse create(CreateUserRequest request){
-
-        if (userRepository.existsByEmail(request.getEmail())){
+    public UserResponse create(CreateUserRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException("Email is already registered.");
         }
 
@@ -31,44 +33,25 @@ public class UserService {
         user.setEmail(request.getEmail());
         user.setPassword(request.getPassword());
         user.setPhone(request.getPhone());
-        user.setRole(UserRole.CUSTOMER);
+        user.setRole(request.getRole());
+        user.setDocument(request.getDocument());
 
-        User savedUser = userRepository.save(user);
-
-        return new UserResponse(
-                savedUser.getId(),
-                savedUser.getName(),
-                savedUser.getEmail(),
-                savedUser.getPhone(),
-                savedUser.getRole()
-        );
-
+        return userMapper.toResponse(userRepository.save(user));
     }
-//Metodo para get
+
     public List<UserResponse> findAll() {
         return userRepository.findAll()
                 .stream()
-                .map(user -> new UserResponse(
-                        user.getId(),
-                        user.getName(),
-                        user.getEmail(),
-                        user.getPhone(),
-                        user.getRole()
-                ))
+                .map(userMapper::toResponse)
                 .toList();
     }
 
     public UserResponse findById(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
-        return new UserResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getPhone(),
-                user.getRole()
-        );
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        return userMapper.toResponse(user);
     }
-    //metodo para update, validando email repetido nao duplicado
+
     public UserResponse update(Long id, UpdateUserRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
@@ -82,22 +65,12 @@ public class UserService {
         user.setPassword(request.getPassword());
         user.setPhone(request.getPhone());
 
-        User updatedUser = userRepository.save(user);
-
-        return new UserResponse(
-                updatedUser.getId(),
-                updatedUser.getName(),
-                updatedUser.getEmail(),
-                updatedUser.getPhone(),
-                updatedUser.getRole()
-        );
-
+        return userMapper.toResponse(userRepository.save(user));
     }
-//busca user by id primeiro
-public void deleteById(Long id){
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id" + id));
 
+    public void deleteById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         userRepository.delete(user);
-}
+    }
 }

@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity //defini entidade no banco
 @Table(name = "users") //nome da tabela
 @Getter
@@ -32,5 +34,11 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private UserRole role;
+
+    @Column(length = 14)
+    private String document;
+
+    @Column
+    private LocalDateTime createdAt = LocalDateTime.now();
 
 }
